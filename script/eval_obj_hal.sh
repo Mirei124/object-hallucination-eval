@@ -17,8 +17,8 @@ msg() {
   printf "\033[0;32m==> %s\033[0m\n" "$@"
 }
 
-[ -d log ] || mkdir log
-LOG_FILE="log/${MODEL_NAME}_$(date +%y%m%d-%H%M%S).log"
+[ -d "log/${MODEL_NAME}" ] || mkdir -p "log/${MODEL_NAME}"
+LOG_FILE="log/${MODEL_NAME}/obj_hal_$(date +%y%m%d-%H%M%S).log"
 exec > >(tee "${LOG_FILE}.part") 2>&1
 
 msg "START GENERATE ANSWER"

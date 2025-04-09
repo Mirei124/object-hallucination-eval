@@ -38,7 +38,7 @@ python ./RLHF-V/eval/eval_gpt_obj_halbench.py \
   --cap_type "$ANSWERS_FILE" \
   --org_folder "$QUESTION_FILE" \
   --openai_key "$OPENAI_KEY" \
-  --openai_baseurl "$OPENAI_BASE_URL" # --use_gpt
+  --openai_baseurl "$OPENAI_BASE_URL" --use_gpt
 
 msg "SHOW RESULT"
 

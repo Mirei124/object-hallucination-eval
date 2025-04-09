@@ -125,18 +125,19 @@ def combine_coco_instances(annotation_path):
 
 class CHAIR(object):
 
-    def __init__(self, imids, coco_path, openai_apikey):
+    def __init__(self, imids, coco_path, openai_apikey, openai_apibase):
 
         self.imid_to_objects = {imid: [] for imid in imids}
 
         self.coco_path = coco_path
 
-        self.chat_model = Chat(model="gpt-3.5-turbo-0613", timeout_sec=100, openai_apikey=openai_apikey)
+        # gpt-3.5-turbo-0613
+        self.chat_model = Chat(model="gpt-3.5-turbo", timeout_sec=100, openai_apikey=openai_apikey, openai_apibase=openai_apibase)
         self.fail_limit=100
 
 
         #read in synonyms
-        synonyms = open('./eval/data/synonyms_refine.txt').readlines()
+        synonyms = open('./RLHF-V/eval/data/synonyms_refine.txt').readlines()
         synonyms = [s.strip().split(', ') for s in synonyms]
         self.mscoco_objects = [] #mscoco objects and *all* synonyms
         self.inverse_synonym_dict = {}
@@ -664,6 +665,7 @@ if __name__ == '__main__':
     parser.add_argument("--sample_num", type=int, default=-1)
     parser.add_argument("--use_gpt", action='store_true')
     parser.add_argument("--openai_key", type=str, default='')
+    parser.add_argument("--openai_baseurl", type=str, default="https://api.openai.com/v1")
     args = parser.parse_args()
 
     print("use gpt:", args.use_gpt)
@@ -682,7 +684,7 @@ if __name__ == '__main__':
     # assert len(imids) == 300
 
     print("=======init evaluator=======")
-    evaluator = CHAIR(imids, args.coco_path, args.openai_key)
+    evaluator = CHAIR(imids, args.coco_path, args.openai_key, args.openai_baseurl)
     evaluator.get_annotations()
 
     print("========compute=========")

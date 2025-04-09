@@ -2,9 +2,10 @@
 
 set -e
 
-MODEL_PATH="TODO"
-OPENAI_KEY="TODO"
-COCO_ANNOTATION_PATH="TODO"
+MODEL_PATH="liuhaotian/llava-v1.5-7b"
+OPENAI_KEY="foo"
+OPENAI_BASE_URL="https://api.openai.com/v1"
+COCO_ANNOTATION_PATH="./coco2014/annotations"
 CONV_MODE="llama"
 
 MODEL_NAME="${MODEL_PATH##*/}"
@@ -12,10 +13,15 @@ QUESTION_FILE="./RLHF-V/eval/data/obj_halbench_300_with_image.jsonl"
 SAVE_DIR="./result/${MODEL_NAME}"
 ANSWERS_FILE="${SAVE_DIR}/obj_halbench_answer.jsonl"
 
-GREEN='\033[0;32m'
-END='\033[0m'
+msg() {
+  printf "\033[0;32m==> %s\033[0m\n" "$@"
+}
 
-echo -e "\n${GREEN}----> START GENERATE ANSWER <----${END}\n"
+[ -d log ] || mkdir log
+LOG_FILE="log/${MODEL_NAME}_$(date +%y%m%d-%H%M%S).log"
+exec > >(tee "${LOG_FILE}.part") 2>&1
+
+msg "START GENERATE ANSWER"
 
 python ./eval_tinyllava/model_obj_hal.py \
   --model-path "$MODEL_PATH" \
@@ -24,19 +30,21 @@ python ./eval_tinyllava/model_obj_hal.py \
   --conv-mode "$CONV_MODE" \
   --temperature 0
 
-echo -e "\n${GREEN}----> START EVALUATE <----${END}\n"
+msg "START EVALUATE"
 
 python ./RLHF-V/eval/eval_gpt_obj_halbench.py \
   --coco_path "$COCO_ANNOTATION_PATH" \
   --cap_folder "$SAVE_DIR" \
   --cap_type "$ANSWERS_FILE" \
   --org_folder "$QUESTION_FILE" \
-  --use_gpt \
-  --openai_key "$OPENAI_KEY"
+  --openai_key "$OPENAI_KEY" \
+  --openai_baseurl "$OPENAI_BASE_URL" # --use_gpt
 
-echo -e "\n${GREEN}----> SHOW RESULT <----${END}\n"
+msg "SHOW RESULT"
 
-python ../RLHF-V/eval/summarize_gpt_obj_halbench_review.py "$SAVE_DIR" >"$SAVE_DIR/obj_halbench_scores.txt"
+python ./RLHF-V/eval/summarize_gpt_obj_halbench_review.py "$SAVE_DIR" >"$SAVE_DIR/obj_halbench_scores.txt"
 
 echo 'Scores are:'
 cat "$SAVE_DIR/obj_halbench_scores.txt"
+
+mv "${LOG_FILE}.part" "$LOG_FILE"

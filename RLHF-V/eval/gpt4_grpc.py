@@ -4,10 +4,11 @@ import time
 NUM_SECONDS_TO_SLEEP = 0.5
 
 class Chat:
-    def __init__(self, model="", timeout_sec=20, openai_apikey=''):
+    def __init__(self, model="", timeout_sec=20, openai_apikey='', openai_apibase="https://api.openai.com/v1"):
         self.model = model
         self.timeout = timeout_sec
         openai.api_key = openai_apikey
+        openai.api_base = openai_apibase
 
     def chat_completion(self, messages, temperature=0.2, top_p=1, max_tokens=512,
                         presence_penalty=0, frequency_penalty=0):

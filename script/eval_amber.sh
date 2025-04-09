@@ -19,7 +19,6 @@ msg() {
 
 [ -d "log/${MODEL_NAME}" ] || mkdir -p "log/${MODEL_NAME}"
 LOG_FILE="log/${MODEL_NAME}/amber_$(date +%y%m%d-%H%M%S).log"
-exec > >(tee "${LOG_FILE}.part") 2>&1
 
 msg "START GENERATE ANSWER"
 
@@ -36,6 +35,8 @@ for IDX in $(seq 0 $((NUM_CHUNKS - 1))); do
 done
 
 wait
+
+exec > >(tee "${LOG_FILE}.part") 2>&1
 
 echo -n >"${ANSWERS_FILE}.jsonl"
 

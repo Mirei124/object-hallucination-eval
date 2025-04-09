@@ -26,7 +26,7 @@ LOG_FILE="log/${MODEL_NAME}/hb_$(date +%y%m%d-%H%M%S).log"
 msg "START GENERATE ANSWER"
 
 for IDX in $(seq 0 $((NUM_CHUNKS - 1))); do
-  CUDA_VISIBLE_DEVICES="${GPUS[$IDX]}" python ./eval_tinyllava/model_hb.py \
+  CUDA_VISIBLE_DEVICES="${GPUS[$IDX]}" python ./eval_llava/model_hb.py \
     --model-path "$MODEL_PATH" \
     --image-folder "./HallusionBench/hallusion_bench" \
     --question-file "./HallusionBench/HallusionBench.json" \

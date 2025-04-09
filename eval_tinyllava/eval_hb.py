@@ -472,7 +472,7 @@ if __name__ == "__main__":
     data_vd = []
     data_vs = []
     with open(input_file_name) as json_file:
-        datas = json.load(json_file)
+        datas = [json.loads(line) for line in open(input_file_name, "r")]
 
     for data in tqdm(datas):
         if data["category"] == "VD":

@@ -3,15 +3,12 @@
 set -e
 
 MODEL_PATH="liuhaotian/llava-v1.5-7b"
-OPENAI_KEY="foo"
-OPENAI_BASE_URL="https://api.openai.com/v1"
+AMBER_IMAGE_DIR="./AMBER/image"
 CONV_MODE="llama"
 
 MODEL_NAME="${MODEL_PATH##*/}"
 SAVE_DIR="./result/${MODEL_NAME}"
-ANSWERS_FILE="${SAVE_DIR}/hb_answer"
-VD_SAVE_PATH="${SAVE_DIR}hb_output_vd_model.json"
-VS_SAVE_PATH="${SAVE_DIR}hb_output_vs_model.json"
+ANSWERS_FILE="${SAVE_DIR}/amber_answer"
 
 IFS=',' read -ra GPUS <<<"${CUDA_VISIBLE_DEVICES:-0}"
 NUM_CHUNKS="${#GPUS[@]}"
@@ -21,15 +18,15 @@ msg() {
 }
 
 [ -d "log/${MODEL_NAME}" ] || mkdir -p "log/${MODEL_NAME}"
-LOG_FILE="log/${MODEL_NAME}/hb_$(date +%y%m%d-%H%M%S).log"
+LOG_FILE="log/${MODEL_NAME}/amber_$(date +%y%m%d-%H%M%S).log"
 
 msg "START GENERATE ANSWER"
 
 for IDX in $(seq 0 $((NUM_CHUNKS - 1))); do
-  CUDA_VISIBLE_DEVICES="${GPUS[$IDX]}" python ./eval_tinyllava/model_hb.py \
+  CUDA_VISIBLE_DEVICES="${GPUS[$IDX]}" python ./eval_llava/model_amber.py \
     --model-path "$MODEL_PATH" \
-    --image-folder "./HallusionBench/hallusion_bench" \
-    --question-file "./HallusionBench/HallusionBench.json" \
+    --image-folder "$AMBER_IMAGE_DIR" \
+    --question-file "./AMBER/data/query/query_all.json" \
     --answers-file "${ANSWERS_FILE}_${NUM_CHUNKS}_${IDX}.jsonl" \
     --num-chunks "$NUM_CHUNKS" \
     --chunk-idx "$IDX" \
@@ -49,11 +46,13 @@ done
 
 msg "START EVALUATE"
 
-python ./eval_tinyllava/eval_hb.py \
-  --input_file_name "${ANSWERS_FILE}.jsonl" \
-  --api_key "$OPENAI_KEY" \
-  --api_base "$OPENAI_BASE_URL" \
-  --save_json_path_vd "$VD_SAVE_PATH" \
-  --save_json_path_vs "$VS_SAVE_PATH"
+python ./AMBER/inference.py \
+  --word_association "./AMBER/data/relation.json" \
+  --safe_words "./AMBER/data/safe_words.txt" \
+  --inference_data "${ANSWERS_FILE}.jsonl" \
+  --annotation "./AMBER/data/annotations.json" \
+  --metrics "./AMBER/data/metrics.txt" \
+  --similarity_score 0.8 \
+  --evaluation_type "a"
 
 mv "${LOG_FILE}.part" "$LOG_FILE"

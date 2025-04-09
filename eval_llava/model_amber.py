@@ -1,15 +1,19 @@
 import argparse
-import json
-import math
 import os
-
-import shortuuid
 import torch
-from PIL import Image
-from tinyllava.data import *
-from tinyllava.model import *
-from tinyllava.utils import *
+import os
+import json
 from tqdm import tqdm
+import shortuuid
+
+from llava.constants import IMAGE_TOKEN_INDEX, DEFAULT_IMAGE_TOKEN, DEFAULT_IM_START_TOKEN, DEFAULT_IM_END_TOKEN
+from llava.conversation import conv_templates, SeparatorStyle
+from llava.model.builder import load_pretrained_model
+from llava.utils import disable_torch_init
+from llava.mm_utils import tokenizer_image_token, process_images, get_model_name_from_path
+
+from PIL import Image
+import math
 
 
 def split_list(lst, n):
@@ -27,12 +31,8 @@ def eval_model(args):
     # Model
     disable_torch_init()
     model_path = os.path.expanduser(args.model_path)
-
-    model, tokenizer, image_processor, context_len = load_pretrained_model(model_path)
-    model.to(device="cuda")
-    text_processor = TextPreprocess(tokenizer, args.conv_mode)
-    data_args = model.config
-    image_processor = ImagePreprocess(image_processor, data_args)
+    model_name = get_model_name_from_path(model_path)
+    tokenizer, model, image_processor, context_len = load_pretrained_model(model_path, args.model_base, model_name)
 
     with open(os.path.expanduser(args.question_file), "r") as fp:
         questions = json.loads(fp.read())
@@ -45,29 +45,29 @@ def eval_model(args):
         image_file = line["image"]
         qs = line["query"]
         cur_prompt = qs
-
-        qs = DEFAULT_IMAGE_TOKEN + "\n" + qs
+        if model.config.mm_use_im_start_end:
+            qs = DEFAULT_IM_START_TOKEN + DEFAULT_IMAGE_TOKEN + DEFAULT_IM_END_TOKEN + "\n" + qs
+        else:
+            qs = DEFAULT_IMAGE_TOKEN + "\n" + qs
 
         if idx >= 1005:
             qs = qs + "\nAnswer the question using a single word or phrase."
 
-        msg = Message()
-        msg.add_message(qs)
+        conv = conv_templates[args.conv_mode].copy()
+        conv.append_message(conv.roles[0], qs)
+        conv.append_message(conv.roles[1], None)
+        prompt = conv.get_prompt()
 
-        result = text_processor(msg.messages, mode="eval")
-        input_ids = result["input_ids"]
-        prompt = result["prompt"]
-        input_ids = input_ids.unsqueeze(0).cuda()
+        input_ids = tokenizer_image_token(prompt, tokenizer, IMAGE_TOKEN_INDEX, return_tensors="pt").unsqueeze(0).cuda()
 
         image = Image.open(os.path.join(args.image_folder, image_file)).convert("RGB")
-        image_tensor = image_processor(image)
-        image_tensors = image_tensor.unsqueeze(0).half().cuda()
-        image_sizes = [image.size]
+        image_tensor = process_images([image], image_processor, model.config)[0]
+
         with torch.inference_mode():
             output_ids = model.generate(
                 input_ids,
-                images=image_tensors,
-                image_sizes=image_sizes,
+                images=image_tensor.unsqueeze(0).half().cuda(),
+                image_sizes=[image.size],
                 do_sample=True if args.temperature > 0 else False,
                 temperature=args.temperature,
                 top_p=args.top_p,

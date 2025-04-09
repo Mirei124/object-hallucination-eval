@@ -78,16 +78,10 @@ def eval_model(args):
 
         outputs = tokenizer.batch_decode(output_ids, skip_special_tokens=True)[0].strip()
 
-        ans_id = shortuuid.uuid()
+        # ans_id = shortuuid.uuid()
         ans_file.write(
             json.dumps(
                 {
-                    # "question_id": idx,
-                    # "prompt": prompt,
-                    # "text": outputs,
-                    # "answer_id": ans_id,
-                    # "model_id": args.model_base,
-                    # "metadata": {},
                     "image_id": image_id,
                     "prompt": prompt,
                     "text": outputs,

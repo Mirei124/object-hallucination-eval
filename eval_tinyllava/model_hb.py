@@ -34,7 +34,6 @@ def eval_model(args):
     data_args = model.config
     image_processor = ImagePreprocess(image_processor, data_args)
 
-    # questions = [json.loads(q) for q in open()]
     with open(os.path.expanduser(args.question_file), "r") as fp:
         questions = json.loads(fp.read())
     questions = get_chunk(questions, args.num_chunks, args.chunk_idx)
@@ -42,15 +41,13 @@ def eval_model(args):
     os.makedirs(os.path.dirname(answers_file), exist_ok=True)
     ans_file = open(answers_file, "w")
     for line in tqdm(questions):
-        idx = line["id"]
-        image_file = line["image"]
-        qs = line["query"]
+        has_visual = line["visual_input"] == "1"
+        image_file = line["filename"]
+        qs = line["question"]
         cur_prompt = qs
 
-        qs = DEFAULT_IMAGE_TOKEN + "\n" + qs
-
-        if idx >= 1005:
-            qs = qs + "\nAnswer the question using a single word or phrase."
+        if has_visual:
+            qs = DEFAULT_IMAGE_TOKEN + "\n" + qs
 
         msg = Message()
         msg.add_message(qs)
@@ -60,10 +57,14 @@ def eval_model(args):
         prompt = result["prompt"]
         input_ids = input_ids.unsqueeze(0).cuda()
 
-        image = Image.open(os.path.join(args.image_folder, image_file)).convert("RGB")
-        image_tensor = image_processor(image)
-        image_tensors = image_tensor.unsqueeze(0).half().cuda()
-        image_sizes = [image.size]
+        if has_visual:
+            image = Image.open(os.path.join(args.image_folder, image_file)).convert("RGB")
+            image_tensor = image_processor(image)
+            image_tensors = image_tensor.unsqueeze(0).half().cuda()
+            image_sizes = [image.size]
+        else:
+            image_tensors = None
+            image_sizes = None
         with torch.inference_mode():
             output_ids = model.generate(
                 input_ids,
@@ -81,7 +82,23 @@ def eval_model(args):
         outputs = tokenizer.batch_decode(output_ids, skip_special_tokens=True)[0].strip()
 
         # ans_id = shortuuid.uuid()
-        ans_file.write(json.dumps({"id": idx, "response": outputs}) + "\n")
+        ans_file.write(
+            json.dumps(
+                {
+                    "category": line["category"],
+                    "subcategory": line["subcategory"],
+                    "visual_input": line["visual_input"],
+                    "set_id": line["set_id"],
+                    "figure_id": line["figure_id"],
+                    "sample_note": line["sample_note"],
+                    "question_id": line["question_id"],
+                    "question": line["question"],
+                    "gt_answer_details": line["gt_answer_details"],
+                    "model_prediction": outputs,
+                }
+            )
+            + "\n"
+        )
         ans_file.flush()
     ans_file.close()
 

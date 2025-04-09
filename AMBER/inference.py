@@ -80,7 +80,7 @@ def main(args):
     else:
         dimension[args.evaluation_type] = True
     
-    inference_data = json.load(open(args.inference_data, 'r', encoding='utf-8'))
+    inference_data = [json.loads(line) for line in open(args.inference_data, "r", encoding="utf-8")]
     ground_truth = json.load(open(args.annotation, 'r', encoding='utf-8'))
 
     for i in tqdm(range(len(inference_data))):

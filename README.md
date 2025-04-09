@@ -2,7 +2,9 @@
 
 $$
 \text{response-level hallucination rate} = \frac{|\text{responses with object hallucinations}|}{|\text{responses that introduce COCO objects}|}
-\newline
+$$
+
+$$
 \text{mention-level hallucination rate} = \frac{|\text{falsely mentioned COCO objects}|}{|\text{mentioned COCO objects}|}
 $$
 
@@ -23,19 +25,27 @@ bash ./script/eval_obj_hal.sh
 
 ## AMBER
 
-The frequency of hallucinatory objects appearing in the responses:
+1. The frequency of hallucinatory objects appearing in the responses:
 
-$CHAIR(R) = 1 - \frac{len(R'_{obj}\cap A_{obj})}{len(R'_{obj})}$
+$$
+CHAIR(R) = 1 - \frac{len(R^{\prime}_{obj}\cap A_{obj})}{len(R^{\prime}_{obj})}
+$$
 
-$A_{obj}$ annotated objects list
+$$
+\begin{align*}
+&A_{obj}\text{ annotated objects list}
+\\
+&R^{\prime}_{obj}\text{ objects mentioned in the response after filtering}
+\end{align*}
+$$
 
-$R'_{obj}$ objects mentioned in the response after filtering
+2. The object coverage of responses:
 
-The object coverage of responses:
+$$
+Cover(R)=\frac{len(R^{\prime}_{obj} \cap A_{obj})}{len(A_{obj})}
+$$
 
-$Cover(R)=\frac{len(R'_{obj} \cap A_{obj})}{len(A_{obj})}$
-
-The proportion of responses with hallucinations:
+3. The proportion of responses with hallucinations:
 
 $$
 Hal(R)=
@@ -45,9 +55,17 @@ Hal(R)=
 \end{cases}
 $$
 
-Assess whether the hallucinations in MLLMs are similar to those in human cognition:
+4. Assess whether the hallucinations in MLLMs are similar to those in human cognition:
 
-$Cog(R)=\frac{len(R'_{obj}\cap H_{obj})}{len(R'_{obj})}$
+$$
+Cog(R)=\frac{len(R^{\prime}_{obj}\cap H_{obj})}{len(R^{\prime}_{obj})}
+$$
+
+### Evaluation
+
+```bash
+bash ./script/eval_amber.sh
+```
 
 ## Reference
 

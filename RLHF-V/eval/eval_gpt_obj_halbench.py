@@ -333,24 +333,24 @@ class CHAIR(object):
             resp = None
             try:
                 resp = self.chat_model.chat_completion(messages=messages)
-                print(resp["model"])
+                print(resp.model)
 
                 # Logging consumption
-                used_tokens["total"] += resp['usage']["total_tokens"]
-                used_tokens["input"] += resp['usage']["prompt_tokens"]
-                used_tokens["output"] += resp['usage']["completion_tokens"]
+                used_tokens["total"] += resp.usage.total_tokens
+                used_tokens["input"] += resp.usage.prompt_tokens
+                used_tokens["output"] += resp.usage.completion_tokens
 
                 # Parsing ChatGPT response
-                content = resp["choices"][0]["message"]["content"]
+                content = resp.choices[0].message.content
                 content = parse_object_list(content)
 
                 # API Rest
                 time.sleep(5)
 
                 data_item["extract_objs"] = content
-                success_tokens = {"total": resp['usage']['total_tokens'],
-                                  "input": resp['usage']['prompt_tokens'],
-                                  "output": resp['usage']['completion_tokens']}
+                success_tokens = {"total": resp.usage.total_tokens,
+                                  "input": resp.usage.prompt_tokens,
+                                  "output": resp.usage.completion_tokens}
                 return data_item, used_tokens, success_tokens
             except Exception as e:
                 fail_cnt += 1

@@ -43,7 +43,9 @@ def evaluate_by_chatgpt(
                     timeout=5,
                 )
                 break
-            except:
+            except Exception as e:
+                print(type(e))
+                print(e)
                 print("Timeout, retrying...")
                 time.sleep(5)  # Wait for 5 seconds before retrying
 
@@ -102,7 +104,9 @@ def check_same_by_chatgpt(
                     )
 
                     break
-                except:
+                except Exception as e:
+                    print(type(e))
+                    print(e)
                     print("Timeout, retrying...")
                     time.sleep(5)  # Wait for 5 seconds before retrying
 
@@ -488,7 +492,9 @@ if __name__ == "__main__":
         data_vs = check_same_by_chatgpt(
             data_vs, model_output_entry, load_json=load_json, save_json_path=save_json_path_vs
         )
-    except:
+    except Exception as e:
+        print(type(e))
+        print(e)
         time.sleep(60)
         data_vs = evaluate_by_chatgpt(
             data_vs, model_output_entry, model_correctness_entry, load_json=load_json, save_json_path=save_json_path_vs

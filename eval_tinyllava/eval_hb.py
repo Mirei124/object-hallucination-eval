@@ -4,7 +4,7 @@ import time
 from argparse import ArgumentParser
 
 import numpy as np
-import openai
+from openai import OpenAI
 from prettytable import PrettyTable
 from tqdm import tqdm
 
@@ -37,19 +37,17 @@ def evaluate_by_chatgpt(
         # https://github.com/openai/openai-python/issues/322#issuecomment-1767841683
         while True:
             try:
-                response = openai.ChatCompletion.create(
+                response = openai_client.chat.completions.create(
                     model=gpt_model,
                     messages=[{"role": "user", "content": prompt}],
-                    api_key=api_key,
-                    api_base=api_base,
-                    request_timeout=5,
+                    timeout=5,
                 )
                 break
             except:
                 print("Timeout, retrying...")
                 time.sleep(5)  # Wait for 5 seconds before retrying
 
-        output_text = response["choices"][0]["message"]["content"]
+        output_text = response.choices[0].message.content
 
         if "incorrect" in output_text.lower():
             gpt_correctness = "0"
@@ -97,12 +95,10 @@ def check_same_by_chatgpt(
             # https://github.com/openai/openai-python/issues/322#issuecomment-1767841683
             while True:
                 try:
-                    response = openai.ChatCompletion.create(
+                    response = openai_client.chat.completions.create(
                         model=gpt_model,
                         messages=[{"role": "user", "content": prompt}],
-                        api_key=api_key,
-                        api_base=api_base,
-                        request_timeout=5,
+                        timeout=5,
                     )
 
                     break
@@ -110,7 +106,7 @@ def check_same_by_chatgpt(
                     print("Timeout, retrying...")
                     time.sleep(5)  # Wait for 5 seconds before retrying
 
-            output_text = response["choices"][0]["message"]["content"]
+            output_text = response.choices[0].message.content
 
             gpt_same = "0"
 
@@ -466,8 +462,8 @@ if __name__ == "__main__":
     load_json = args.load_json
     save_json_path_vd = args.save_json_path_vd
     save_json_path_vs = args.save_json_path_vs
-    api_key = args.api_key
-    api_base = args.api_base
+
+    openai_client = OpenAI(api_key=args.api_key, base_url=args.api_base)
 
     data_vd = []
     data_vs = []

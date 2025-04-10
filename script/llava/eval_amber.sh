@@ -4,7 +4,7 @@ set -e
 
 MODEL_PATH="liuhaotian/llava-v1.5-7b"
 AMBER_IMAGE_DIR="./AMBER/image"
-CONV_MODE="llama"
+CONV_MODE="llava_v1"
 
 MODEL_NAME="${MODEL_PATH##*/}"
 SAVE_DIR="./result/${MODEL_NAME}"

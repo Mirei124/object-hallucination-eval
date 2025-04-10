@@ -10,8 +10,10 @@ CONV_MODE="llama"
 
 MODEL_NAME="${MODEL_PATH##*/}"
 QUESTION_FILE="./RLHF-V/eval/data/obj_halbench_300_with_image.jsonl"
-SAVE_DIR="./result/${MODEL_NAME}"
+SAVE_DIR="./result/${MODEL_NAME}/obj_hal"
 ANSWERS_FILE="${SAVE_DIR}/obj_halbench_answer.jsonl"
+
+[ -f .env ] && source .env
 
 msg() {
   printf "\033[0;32m==> %s\033[0m\n" "$@"

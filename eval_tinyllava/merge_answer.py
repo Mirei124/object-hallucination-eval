@@ -20,5 +20,5 @@ if __name__ == "__main__":
             all_list.append(data)
 
     result = merge_gather(*all_list)
-    with open(os.path.join(args.answer_dir, "amber_answer.jsonl")) as fp:
+    with open(os.path.join(args.answer_dir, "amber_answer.jsonl"), "w") as fp:
         fp.writelines(result)

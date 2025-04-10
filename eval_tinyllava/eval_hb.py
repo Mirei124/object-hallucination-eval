@@ -17,24 +17,36 @@ def generate_gpt_response(
     idx: int,
     prompt: str,
     model: str,
+    max_fail_times=5,
 ) -> tuple[int, str, str]:
+    fail_count = 0
     while True:
+        if fail_count >= max_fail_times:
+            print(f"Failed {fail_count} times, exiting...")
+            exit(1)
+        time.sleep(random.randint(3, 10))
         try:
             response = openai_client.chat.completions.create(
                 model=model, messages=[{"role": "user", "content": prompt}], timeout=5
             )
             break
+
         except openai.APITimeoutError:
+            fail_count += 1
             print("Timeout, retrying...")
-            time.sleep(15 + random.randint(0, 10))
+            time.sleep(15 + fail_count)
+
         except openai.PermissionDeniedError as e:
+            fail_count += 1
             print(type(e))
             print(e)
             exit(1)
+
         except Exception as e:
+            fail_count += 1
             print(type(e))
             print(e)
-            time.sleep(15 + random.randint(0, 10))
+            time.sleep(15 + fail_count)
 
     return (idx, prompt, response.choices[0].message.content)
 

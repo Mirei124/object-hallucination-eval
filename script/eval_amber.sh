@@ -49,7 +49,6 @@ python -u ./eval_tinyllava/merge_answer.py \
   --answer-dir "$SAVE_DIR" \
   --num-chunks "$NUM_CHUNKS"
 
-
 msg "START EVALUATE"
 
 python -u ./AMBER/inference.py \

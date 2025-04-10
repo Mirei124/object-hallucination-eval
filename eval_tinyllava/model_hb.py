@@ -94,6 +94,7 @@ def eval_model(args):
                     "question_id": line["question_id"],
                     "question": line["question"],
                     "gt_answer_details": line["gt_answer_details"],
+                    "gt_answer": line["gt_answer"],
                     "model_prediction": outputs,
                 }
             )

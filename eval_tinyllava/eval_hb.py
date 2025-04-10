@@ -1,12 +1,42 @@
+import concurrent.futures
 import json
 import os
+import random
 import time
 from argparse import ArgumentParser
+from concurrent.futures import ThreadPoolExecutor
 
 import numpy as np
+import openai
 from openai import OpenAI
 from prettytable import PrettyTable
 from tqdm import tqdm
+
+
+def generate_gpt_response(
+    idx: int,
+    prompt: str,
+    model: str,
+) -> tuple[int, str, str]:
+    while True:
+        try:
+            response = openai_client.chat.completions.create(
+                model=model, messages=[{"role": "user", "content": prompt}], timeout=5
+            )
+            break
+        except openai.APITimeoutError:
+            print("Timeout, retrying...")
+            time.sleep(15 + random.randint(0, 10))
+        except openai.PermissionDeniedError as e:
+            print(type(e))
+            print(e)
+            exit(1)
+        except Exception as e:
+            print(type(e))
+            print(e)
+            time.sleep(15 + random.randint(0, 10))
+
+    return (idx, prompt, response.choices[0].message.content)
 
 
 def get_image_file_location(root, row):
@@ -22,49 +52,56 @@ def evaluate_by_chatgpt(
     if load_json and os.path.exists(save_json_path):
         with open(save_json_path, "r") as f:
             output = json.load(f)
+        checked_items = [
+            x["category"] + x["subcategory"] + x["set_id"] + x["figure_id"] + x["question_id"] for x in output
+        ]
     else:
         output = []
-    for sample in tqdm(data[len(output) :]):
-        prompt = "Imagine you are an intelligent teacher. Thoroughly read the question, reference answer and the prediction answer to ensure a clear understanding of the information provided. Assess the correctness of the predictions. "
-        prompt += 'If the prediction answer does not conflict with the reference answer, please generate “correct”. If the prediction answer conflict with the reference answer, please generate “incorrect”. If the prediction answer is unclear about the answer, please generate "unclear". \n\n Question:'
-        prompt += sample["question"]
-        prompt += "\nReference answer: "
-        prompt += sample["gt_answer_details"]
-        prompt += "\nPrediction answer:"
-        prompt += sample[output_entry]
-        prompt += "\nOutput:"
+        checked_items = []
 
-        # https://github.com/openai/openai-python/issues/322#issuecomment-1767841683
-        while True:
-            try:
-                response = openai_client.chat.completions.create(
-                    model=gpt_model,
-                    messages=[{"role": "user", "content": prompt}],
-                    timeout=5,
-                )
-                break
-            except Exception as e:
-                print(type(e))
-                print(e)
-                print("Timeout, retrying...")
-                time.sleep(5)  # Wait for 5 seconds before retrying
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        future_list = []
+        for idx, sample in enumerate(data):
+            if (
+                sample["category"]
+                + sample["subcategory"]
+                + sample["set_id"]
+                + sample["figure_id"]
+                + sample["question_id"]
+                in checked_items
+            ):
+                continue
 
-        output_text = response.choices[0].message.content
+            prompt = "Imagine you are an intelligent teacher. Thoroughly read the question, reference answer and the prediction answer to ensure a clear understanding of the information provided. Assess the correctness of the predictions. "
+            prompt += 'If the prediction answer does not conflict with the reference answer, please generate “correct”. If the prediction answer conflict with the reference answer, please generate “incorrect”. If the prediction answer is unclear about the answer, please generate "unclear". \n\n Question:'
+            prompt += sample["question"]
+            prompt += "\nReference answer: "
+            prompt += sample["gt_answer_details"]
+            prompt += "\nPrediction answer:"
+            prompt += sample[output_entry]
+            prompt += "\nOutput:"
 
-        if "incorrect" in output_text.lower():
-            gpt_correctness = "0"
+            future_list.append(executor.submit(generate_gpt_response, idx, prompt, gpt_model))
 
-        elif "correct" in output_text.lower():
-            gpt_correctness = "1"
-        else:
-            gpt_correctness = "2"
+        progress = tqdm(total=len(future_list))
+        for future in concurrent.futures.as_completed(future_list):
+            progress.update(1)
+            idx, prompt, output_text = future.result()
 
-        sample[correctness_entry] = gpt_correctness
+            if "incorrect" in output_text.lower():
+                gpt_correctness = "0"
 
-        output.append(sample)
+            elif "correct" in output_text.lower():
+                gpt_correctness = "1"
+            else:
+                gpt_correctness = "2"
 
-        with open(save_json_path, "w") as f:
-            json.dump(output, f)
+            data[idx][correctness_entry] = gpt_correctness
+
+            output.append(data[idx])
+
+            with open(save_json_path, "w") as f:
+                json.dump(output, f)
 
     return output
 
@@ -79,38 +116,29 @@ def check_same_by_chatgpt(
             key = "_".join([r["category"], r["subcategory"], str(r["set_id"]), str(r["question_id"])])
             orig_response[key] = r[output_entry]
 
-    for sample in tqdm(data):
-        if "same" not in sample.keys():
-            key = "_".join(
-                [sample["category"], sample["subcategory"], str(sample["set_id"]), str(sample["question_id"])]
-            )
-            response2 = orig_response[key]
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        future_list = []
+        for idx, sample in enumerate(data):
+            if "same" not in sample.keys():
+                key = "_".join(
+                    [sample["category"], sample["subcategory"], str(sample["set_id"]), str(sample["question_id"])]
+                )
+                response2 = orig_response[key]
 
-            prompt = "Imagine you are an intelligent teacher. Thoroughly read the two responses to two different questions. Assess the consistency of the information provided within those two responses. "
-            prompt += "You do not know the specific questions, but you can asssess the consistency among the two responses by checking for logical conflicts if both responses are correct. "
-            prompt += 'If response1 does not conflict with response2, please generate “same”. Otherwise, generate "different". \n\n response1:'
-            prompt += sample[output_entry]
-            prompt += "\nresponse2: "
-            prompt += response2
-            prompt += "\nOutput:"
+                prompt = "Imagine you are an intelligent teacher. Thoroughly read the two responses to two different questions. Assess the consistency of the information provided within those two responses. "
+                prompt += "You do not know the specific questions, but you can asssess the consistency among the two responses by checking for logical conflicts if both responses are correct. "
+                prompt += 'If response1 does not conflict with response2, please generate “same”. Otherwise, generate "different". \n\n response1:'
+                prompt += sample[output_entry]
+                prompt += "\nresponse2: "
+                prompt += response2
+                prompt += "\nOutput:"
 
-            # https://github.com/openai/openai-python/issues/322#issuecomment-1767841683
-            while True:
-                try:
-                    response = openai_client.chat.completions.create(
-                        model=gpt_model,
-                        messages=[{"role": "user", "content": prompt}],
-                        timeout=5,
-                    )
+                future_list.append(executor.submit(generate_gpt_response, idx, prompt, gpt_model))
 
-                    break
-                except Exception as e:
-                    print(type(e))
-                    print(e)
-                    print("Timeout, retrying...")
-                    time.sleep(5)  # Wait for 5 seconds before retrying
-
-            output_text = response.choices[0].message.content
+        progress = tqdm(total=len(future_list))
+        for future in concurrent.futures.as_completed(future_list):
+            progress.update(1)
+            idx, prompt, output_text = future.result()
 
             gpt_same = "0"
 
@@ -120,7 +148,7 @@ def check_same_by_chatgpt(
             elif "different" in output_text.lower():
                 gpt_same = "0"
 
-            sample["same"] = gpt_same
+            data[idx]["same"] = gpt_same
 
             with open(save_json_path, "w") as f:
                 json.dump(data, f)

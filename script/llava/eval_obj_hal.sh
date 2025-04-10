@@ -25,7 +25,7 @@ exec > >(tee "${LOG_FILE}.part") 2>&1
 
 msg "START GENERATE ANSWER"
 
-python ./eval_llava/model_obj_hal.py \
+python -u ./eval_llava/model_obj_hal.py \
   --model-path "$MODEL_PATH" \
   --question-file "$QUESTION_FILE" \
   --answers-file "$ANSWERS_FILE" \
@@ -34,7 +34,7 @@ python ./eval_llava/model_obj_hal.py \
 
 msg "START EVALUATE"
 
-python ./RLHF-V/eval/eval_gpt_obj_halbench.py \
+python -u ./RLHF-V/eval/eval_gpt_obj_halbench.py \
   --coco_path "$COCO_ANNOTATION_PATH" \
   --cap_folder "$SAVE_DIR" \
   --cap_type "$ANSWERS_FILE" \
@@ -44,7 +44,7 @@ python ./RLHF-V/eval/eval_gpt_obj_halbench.py \
 
 msg "SHOW RESULT"
 
-python ./RLHF-V/eval/summarize_gpt_obj_halbench_review.py "$SAVE_DIR" >"$SAVE_DIR/obj_halbench_scores.txt"
+python -u ./RLHF-V/eval/summarize_gpt_obj_halbench_review.py "$SAVE_DIR" >"$SAVE_DIR/obj_halbench_scores.txt"
 
 echo 'Scores are:'
 cat "$SAVE_DIR/obj_halbench_scores.txt"

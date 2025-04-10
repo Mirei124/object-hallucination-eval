@@ -6,11 +6,11 @@ MODEL_PATH="liuhaotian/llava-v1.5-7b"
 AMBER_IMAGE_DIR="./AMBER/image"
 CONV_MODE="llama"
 
+[ -f .env ] && source .env
+
 MODEL_NAME="${MODEL_PATH##*/}"
 SAVE_DIR="./result/${MODEL_NAME}/amber"
 ANSWERS_FILE="${SAVE_DIR}/amber_answer"
-
-[ -f .env ] && source .env
 
 IFS=',' read -ra GPUS <<<"${CUDA_VISIBLE_DEVICES:-0}"
 NUM_CHUNKS="${#GPUS[@]}"

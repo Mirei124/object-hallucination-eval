@@ -7,13 +7,13 @@ OPENAI_KEY="foo"
 OPENAI_BASE_URL="https://api.openai.com/v1"
 CONV_MODE="llava_v1"
 
+[ -f .env ] && source .env
+
 MODEL_NAME="${MODEL_PATH##*/}"
 SAVE_DIR="./result/${MODEL_NAME}/hb"
 ANSWERS_FILE="${SAVE_DIR}/hb_answer"
 VD_SAVE_PATH="${SAVE_DIR}/hb_output_vd_model.json"
 VS_SAVE_PATH="${SAVE_DIR}/hb_output_vs_model.json"
-
-[ -f .env ] && source .env
 
 IFS=',' read -ra GPUS <<<"${CUDA_VISIBLE_DEVICES:-0}"
 NUM_CHUNKS="${#GPUS[@]}"

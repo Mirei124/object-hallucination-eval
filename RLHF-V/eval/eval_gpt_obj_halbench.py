@@ -132,7 +132,9 @@ class CHAIR(object):
         self.coco_path = coco_path
 
         # gpt-3.5-turbo-0613
-        self.chat_model = Chat(model="gpt-3.5-turbo", timeout_sec=100, openai_apikey=openai_apikey, openai_apibase=openai_apibase)
+        self.chat_model = Chat(
+            model="gpt-3.5-turbo", timeout_sec=100, openai_apikey=openai_apikey, openai_baseurl=openai_apibase
+        )
         self.fail_limit=100
 
 

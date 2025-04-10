@@ -40,11 +40,14 @@ wait
 
 exec > >(tee "${LOG_FILE}.part") 2>&1
 
-echo -n >"${ANSWERS_FILE}.jsonl"
+# echo -n >"${ANSWERS_FILE}.jsonl"
 
-for IDX in $(seq 0 $((NUM_CHUNKS - 1))); do
-  cat "${ANSWERS_FILE}_${NUM_CHUNKS}_${IDX}.jsonl" >>"${ANSWERS_FILE}.jsonl"
-done
+# for IDX in $(seq 0 $((NUM_CHUNKS - 1))); do
+#   cat "${ANSWERS_FILE}_${NUM_CHUNKS}_${IDX}.jsonl" >>"${ANSWERS_FILE}.jsonl"
+# done
+python ./eval_tinyllava/merge_answer.py \
+  --answer-dir "$SAVE_DIR" \
+  --num-chunks "$NUM_CHUNKS"
 
 msg "START EVALUATE"
 

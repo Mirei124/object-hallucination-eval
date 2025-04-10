@@ -23,8 +23,9 @@ def split_list(lst, n):
 
 
 def get_chunk(lst, n, k):
-    chunks = split_list(lst, n)
-    return chunks[k]
+    # chunks = split_list(lst, n)
+    # return chunks[k]
+    return lst[k::n]
 
 
 def eval_model(args):

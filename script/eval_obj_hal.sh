@@ -2,6 +2,8 @@
 
 set -e
 
+trap 'kill -- -$$' EXIT
+
 MODEL_PATH="liuhaotian/llava-v1.5-7b"
 OPENAI_KEY="foo"
 OPENAI_BASE_URL="https://api.openai.com/v1"

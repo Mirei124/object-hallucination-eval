@@ -2,6 +2,8 @@
 
 set -e
 
+trap 'kill -- -$$' EXIT
+
 MODEL_PATH="liuhaotian/llava-v1.5-7b"
 AMBER_IMAGE_DIR="./AMBER/image"
 CONV_MODE="llava_v1"

@@ -2,6 +2,8 @@
 
 set -e
 
+trap 'kill -- -$$' EXIT
+
 MODEL_PATH="liuhaotian/llava-v1.5-7b"
 OPENAI_KEY="foo"
 OPENAI_BASE_URL="https://api.openai.com/v1"
@@ -27,27 +29,27 @@ LOG_FILE="log/${MODEL_NAME}/hb_$(date +%y%m%d-%H%M%S).log"
 
 msg "START GENERATE ANSWER"
 
-for IDX in $(seq 0 $((NUM_CHUNKS - 1))); do
-  CUDA_VISIBLE_DEVICES="${GPUS[$IDX]}" python -u ./eval_llava/model_hb.py \
-    --model-path "$MODEL_PATH" \
-    --image-folder "./HallusionBench/hallusion_bench" \
-    --question-file "./HallusionBench/HallusionBench.json" \
-    --answers-file "${ANSWERS_FILE}_${NUM_CHUNKS}_${IDX}.jsonl" \
-    --num-chunks "$NUM_CHUNKS" \
-    --chunk-idx "$IDX" \
-    --conv-mode "$CONV_MODE" \
-    --temperature 0 &
-done
+# for IDX in $(seq 0 $((NUM_CHUNKS - 1))); do
+#   CUDA_VISIBLE_DEVICES="${GPUS[$IDX]}" python -u ./eval_llava/model_hb.py \
+#     --model-path "$MODEL_PATH" \
+#     --image-folder "./HallusionBench/hallusion_bench" \
+#     --question-file "./HallusionBench/HallusionBench.json" \
+#     --answers-file "${ANSWERS_FILE}_${NUM_CHUNKS}_${IDX}.jsonl" \
+#     --num-chunks "$NUM_CHUNKS" \
+#     --chunk-idx "$IDX" \
+#     --conv-mode "$CONV_MODE" \
+#     --temperature 0 &
+# done
+# 
+# wait
 
-wait
+# exec > >(tee "${LOG_FILE}.part") 2>&1
 
-exec > >(tee "${LOG_FILE}.part") 2>&1
-
-echo -n >"${ANSWERS_FILE}.jsonl"
-
-for IDX in $(seq 0 $((NUM_CHUNKS - 1))); do
-  cat "${ANSWERS_FILE}_${NUM_CHUNKS}_${IDX}.jsonl" >>"${ANSWERS_FILE}.jsonl"
-done
+# echo -n >"${ANSWERS_FILE}.jsonl"
+# 
+# for IDX in $(seq 0 $((NUM_CHUNKS - 1))); do
+#   cat "${ANSWERS_FILE}_${NUM_CHUNKS}_${IDX}.jsonl" >>"${ANSWERS_FILE}.jsonl"
+# done
 
 msg "START EVALUATE"
 
